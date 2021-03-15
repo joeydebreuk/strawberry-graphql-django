@@ -13,8 +13,11 @@ class MyUser:
     # forward referensing works fine
     group: 'Group' = strawberry_django.relation_field()
 
+    # relation field name is configurable
+    user_group: 'Group' = strawberry_django.relation_field(relation_field='group')
 
-# type register can be used as a type store which is then
+
+# type register is used as a type store which is then
 # used to resolve types of relation fields
 types = strawberry_django.TypeRegister()
 
@@ -41,7 +44,7 @@ GeneratedQuery = strawberry_django.queries(User, Group, Tag)
 class Query(GeneratedQuery):
     @strawberry.field
     def my_user(name: str) -> MyUser:
-        return models.User.get(name=name)
+        return models.User.objects.get(name=name)
 
 
 schema = strawberry.Schema(query=Query)
