@@ -6,7 +6,7 @@ authors = ["Lauri Hintsala <lauri.hintsala@verkkopaja.fi>"]
 
 [tool.poetry.dependencies]
 python = "^3.7"
-strawberry-graphql-django = "^0.0.6"
+strawberry-graphql-django = {path = "../.."}
 
 [tool.poetry.dev-dependencies]
 
