@@ -14,7 +14,7 @@ class MyUser:
     group: 'Group' = strawberry_django.relation_field()
 
     # relation field name is configurable
-    user_group: 'Group' = strawberry_django.relation_field(relation_field='group')
+    user_group: 'Group' = strawberry_django.relation_field(related_name='group')
 
 
 # type register is used as a type store which is then
