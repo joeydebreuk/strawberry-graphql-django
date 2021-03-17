@@ -1,6 +1,7 @@
 import strawberry
 from django.db.models import fields
 import ast
+import asyncio
 
 def parse_value(value):
     try:
@@ -34,3 +35,15 @@ def get_input_data(model, data):
 
 def camel_to_snake(s):
     return ''.join(['_'+c.lower() if c.isupper() else c for c in s]).lstrip('_')
+
+def is_async():
+    # django uses the same method to detect async operation
+    # https://github.com/django/django/blob/76c0b32f826469320c59709d31e2f2126dd7c505/django/utils/asyncio.py
+    try:
+        event_loop = asyncio.get_event_loop()
+    except RuntimeError:
+        pass
+    else:
+        if event_loop.is_running():
+            return True
+    return False
