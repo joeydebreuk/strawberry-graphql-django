@@ -10,7 +10,8 @@ def type(model, *, fields=None, types=None, is_update=False, **kwargs):
             cls.__annotations__ = {}
         for field_name, field_type, field_value in model_fields:
             cls.__annotations__[field_name] = field_type
-            setattr(cls, field_name, field_value)
+            if field_value is not None:
+                setattr(cls, field_name, field_value)
         cls._django_model = model
         return strawberry.type(cls, **kwargs)
     return wrapper

@@ -3,7 +3,8 @@ from django.db import models
 from strawberry.types.fields.resolver import StrawberryResolver
 from typing import List, Optional
 import strawberry
-from . import utils
+from .. import utils
+
 
 class DjangoResolver(StrawberryResolver):
     def __call__(self, *args, **kwargs):
@@ -28,8 +29,9 @@ def get_object_resolver(model, object_type):
 def get_list_resolver(model, object_type):
     def resolver(filters: Optional[List[str]] = []) -> List[object_type]:
         qs = model.objects.all()
-        filter, exclude = utils.process_filters(filters)
-        qs = qs.filter(**filter).exclude(**exclude)
+        if filters:
+            filter, exclude = utils.process_filters(filters)
+            qs = qs.filter(**filter).exclude(**exclude)
         return qs
     return resolver
 
@@ -52,8 +54,10 @@ def get_relation_resolver_m2m(resolver, related_name):
         if related_name is None:
             related_name = info.field_name
         manager = getattr(root, related_name)
-        filter, exclude = utils.process_filters(filters)
-        qs = manager.filter(**filter).exclude(**exclude)
+        qs = manager.all()
+        if filters:
+            filter, exclude = utils.process_filters(filters)
+            qs = qs.filter(**filter).exclude(**exclude)
         if func.resolver:
             qs = func.resolver(root, info, qs)
         return qs

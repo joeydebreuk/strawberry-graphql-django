@@ -22,8 +22,8 @@ class MyUser:
 types = strawberry_django.TypeRegister()
 
 @types.register
-@strawberry_django.type(models.Tag, types=types)
-class Tag:
+@strawberry_django.type(models.User, types=types)
+class User:
     pass
 
 @types.register
@@ -32,13 +32,29 @@ class Group:
     pass
 
 @types.register
-@strawberry_django.type(models.User, types=types)
-class User:
+@strawberry_django.type(models.Tag, types=types)
+class Tag:
     pass
 
+# input types
+@types.register
+@strawberry_django.input(models.User, fields=['name'], types=types)
+class UserInput:
+    pass
+
+@types.register
+@strawberry_django.input(models.Group, fields=['name'], types=types)
+class GroupInput:
+    pass
+
+@types.register
+@strawberry_django.input(models.Tag, fields=['name'], types=types)
+class TagInput:
+    pass
 
 # queries can be auto generated from types
 GeneratedQuery = strawberry_django.queries(User, Group, Tag)
+GeneratedMutations = strawberry_django.mutations((UserInput, User), (GroupInput, Group), (TagInput, Tag))
 
 @strawberry.type
 class Query(GeneratedQuery):
@@ -47,4 +63,4 @@ class Query(GeneratedQuery):
         return models.User.objects.get(name=name)
 
 
-schema = strawberry.Schema(query=Query)
+schema = strawberry.Schema(query=Query, mutation=GeneratedMutations)

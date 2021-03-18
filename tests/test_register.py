@@ -118,3 +118,35 @@ def test_no_type_for_model(types):
             pass
         # trigger lazy evaluation
         Type._type_definition.fields
+
+
+def test_input_and_output_types(types):
+    @types.register(Child)
+    @strawberry_django.type(Child, fields=['id'])
+    class ChildType:
+        pass
+
+    @types.register(Child)
+    @strawberry_django.input(Child, fields=['id'])
+    class ChildInput:
+        pass
+
+    @strawberry_django.type(Model, fields=[
+        'foreign_key',
+    ], types=types)
+    class Type:
+        pass
+
+    @strawberry_django.input(Model, fields=[
+        'foreign_key',
+    ], types=types)
+    class Input:
+        pass
+
+    assert [(f.name, f.type or f.child.type) for f in Type._type_definition.fields] == [
+        ('foreignKey', ChildType),
+    ]
+
+    assert [(f.name, f.type or f.child.type) for f in Input._type_definition.fields] == [
+        ('foreignKey', ChildInput),
+    ]

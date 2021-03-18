@@ -1,35 +1,34 @@
 import strawberry_django
 from . import models
 
-@strawberry_django.type(models.User, fields=[
-    'id',
-    'name',
-    ('group', 'Group'),
-    ('tag', 'Tag'),
-])
+types = strawberry_django.TypeRegister()
+
+@types.register
+@strawberry_django.type(models.User, types=types)
 class User:
     pass
 
-@strawberry_django.type(models.Group, fields=[
-    'id',
-    'name',
-    ('users', 'User'),
-    ('tags', 'Tag'),
-])
+@types.register
+@strawberry_django.type(models.Group, types=types)
 class Group:
     pass
-    #users: typing.List[User] = strawberry_django.relation_field()
-    #tags: typing.List['Tag'] = strawberry_django.relation_field()
-    #@strawberry_django.relation_field
-    #def users(root, info, qs) -> typing.List[User]:
-    #    return qs
 
-@strawberry_django.type(models.Tag, fields=[
-    'id',
-    'name',
-    ('groups', Group),
-    ('user', User),
-])
+@types.register
+@strawberry_django.type(models.Tag, types=types)
 class Tag:
     pass
 
+@types.register
+@strawberry_django.input(models.User, fields=['name'], types=types)
+class UserInput:
+    pass
+
+@types.register
+@strawberry_django.input(models.Group, fields=['name'], types=types)
+class GroupInput:
+    pass
+
+@types.register
+@strawberry_django.input(models.Tag, fields=['name'], types=types)
+class TagInput:
+    pass

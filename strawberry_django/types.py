@@ -5,6 +5,7 @@ import dataclasses
 import strawberry
 from . import utils
 
+class UNSET: pass
 
 field_type_map = {
     fields.AutoField: strawberry.ID,
@@ -38,40 +39,55 @@ field_type_map = {
 
 
 class LazyModelType(strawberry.LazyType):
-    def __init__(self, field, types):
-        self.field, self.types = field, types
+    def __init__(self, field, type_register, is_input):
+        self.field, self.type_register, self.is_input = field, type_register, is_input
         super().__init__(None, None, None)
 
     def resolve_type(self):
         model = self.field.related_model
-        if model not in self.types:
-            db_field_type = type(self.field)
-            raise TypeError(f"No type defined for field '{db_field_type.__name__}'"
-                    f" which has related model '{model._meta.object_name}'")
-        return self.types[model]
 
+        field_type = self.type_register.get(model, self.is_input, UNSET)
+        if field_type is not UNSET:
+            return field_type
 
-def get_field_type(field, field_types):
-    if field.name in field_types:
-        return field_types[field.name]
-
-    db_field_type = type(field)
-    if db_field_type in field_types:
-        return field_types[db_field_type]
-
-    if field.is_relation:
-        model = field.related_model
-        if model in field_types:
-            return field_types[model]
-        # TODO: show field name
+        db_field_type = type(self.field)
         raise TypeError(f"No type defined for field '{db_field_type.__name__}'"
                 f" which has related model '{model._meta.object_name}'")
 
-    field_type = field_type_map.get(db_field_type)
-    if field_type is None:
-        # TODO: show field name
-        raise TypeError(f"No type defined for '{db_field_type.__name__}'")
-    return field_type
+
+def get_field_type(field, field_types, type_register, is_input):
+    field_type = field_types.get(field.name, UNSET)
+    if field_type is not UNSET:
+        return field_type
+
+    db_field_type = type(field)
+
+    if type_register:
+        field_type = type_register.get(field.name, is_input, UNSET)
+        if field_type is not UNSET:
+            return field_type
+
+        field_type = type_register.get(db_field_type, is_input, UNSET)
+        if field_type is not UNSET:
+            return field_type
+
+        if field.is_relation:
+            model = field.related_model
+
+            field_type = type_register.get(model, is_input, UNSET)
+            if field_type is not UNSET:
+                return field_type
+
+            # TODO: show field name
+            raise TypeError(f"No type defined for field '{db_field_type.__name__}'"
+                    f" which has related model '{model._meta.object_name}'")
+
+    field_type = field_type_map.get(db_field_type, UNSET)
+    if field_type is not UNSET:
+        return field_type
+
+    # TODO: show field name
+    raise TypeError(f"No type defined for '{db_field_type.__name__}'")
 
 
 def is_optional(field, is_input, is_update):
@@ -89,12 +105,9 @@ def is_in(item, item_list, default=False):
     return item in item_list
 
 
-def process_fields(fields, types, model):
+def process_fields(fields, model):
     field_names = []
     field_types = {}
-
-    if types:
-        field_types.update(types)
 
     if fields is None:
         return field_names, field_types
@@ -104,6 +117,7 @@ def process_fields(fields, types, model):
     for field in fields:
         if isinstance(field, str):
             field_name = field
+        #TODO: do we want to support tuple notation?
         elif isinstance(field, tuple):
             if len(field) != 2:
                 raise TypeError('Length of tuple should exactly 2')
@@ -123,28 +137,32 @@ from .fields import (
 
 
 def get_model_fields(cls, model, fields, types, is_input, is_update):
-    field_names, field_types = process_fields(fields, types, model)
+    field_names, field_types = process_fields(fields,  model)
+    type_register = types
 
     model_fields = []
     for field in model._meta.get_fields():
         if not is_in(field.name, field_names, default=True):
             continue
+        if is_input and not field.editable:
+            continue
 
         try:
-            field_type = get_field_type(field, field_types)
+            field_type = get_field_type(field, field_types, type_register, is_input)
         except TypeError:
-            if not field.is_relation or types is None:
+            if not field.is_relation or type_register is None:
                 raise
-            field_type = LazyModelType(field, types)
+            field_type = LazyModelType(field, type_register, is_input)
 
         if field.is_relation:
+
             if field.many_to_many or field.one_to_many:
                 field_type = List[field_type]
-
-        if field.one_to_many or field.many_to_many:
-            field_value = strawberry_django_relation_field()
+                field_value = strawberry_django_relation_field()
+            else:
+                field_value = strawberry_django_relation_field(m2m=False)
         else:
-            field_value = strawberry_django_relation_field(m2m=False)
+            field_value = None
 
         if is_optional(field, is_input, is_update):
             field_type = Optional[field_type]

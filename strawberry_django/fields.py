@@ -1,7 +1,8 @@
 import strawberry
 from typing import Callable, List, Optional
 import dataclasses
-from . import resolvers, utils
+from . import utils
+from .queries import resolvers
 
 def field(resolver=None, **kwargs):
     if resolver:
@@ -18,3 +19,5 @@ def relation_field(resolver=None, *, related_name=None, m2m=True, **kwargs):
     else:
         resolver = resolvers.get_relation_resolver(resolver, related_name)
     return field(resolver, **kwargs)
+
+mutation = field

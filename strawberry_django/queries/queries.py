@@ -1,6 +1,7 @@
 from typing import List, Optional
 import strawberry
-from . import fields, resolvers, utils
+from . import resolvers
+from .. import fields, utils
 
 def queries(*types):
     query_fields = {}

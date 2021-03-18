@@ -1,4 +1,5 @@
-from .type import input, type
 from .fields import field, relation_field
-from .queries import queries
+from .mutations.mutations import mutations
+from .queries.queries import queries
 from .registers import TypeRegister
+from .type import input, type
