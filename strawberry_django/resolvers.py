@@ -14,7 +14,7 @@ class DjangoResolver(StrawberryResolver):
                 result = list(result)
             return result
         if utils.is_async():
-            func = sync_to_async(func)
+            func = sync_to_async(func, thread_sensitive=True)
         return func(*args, **kwargs)
 
 
