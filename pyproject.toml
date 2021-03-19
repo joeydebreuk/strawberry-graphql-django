@@ -26,6 +26,7 @@ pytest-asyncio = "^0.14.0"
 requires = ["poetry-core>=1.0.0", "setuptools"]
 build-backend = "poetry.core.masonry.api"
 
-#[tool.pytest.ini_options]
-#DJANGO_SETTINGS_MODULE = "tests.django_settings"
-#testpaths = ["tests/"]
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "tests.django_settings"
+python_paths = "."
+testpaths = ["tests"]

@@ -1,12 +1,26 @@
-from django.conf import settings
+import pytest
+import strawberry
+import strawberry_django
+from . import models, types
 
-TEST_SETTINGS = {
-    'DATABASES': {
-        "default": { "ENGINE": "django.db.backends.sqlite3" }
-    },
-    'INSTALLED_APPS': [
-        'tests',
-    ],
-}
+@pytest.fixture
+def tag(db):
+    tag = models.Tag.objects.create(name='tag')
+    return tag
 
-settings.configure(**TEST_SETTINGS)
+@pytest.fixture
+def group(db, tag):
+    group = models.Group.objects.create(name='group')
+    group.tags.add(tag)
+    return group
+
+@pytest.fixture
+def user(db, group, tag):
+    user = models.User.objects.create(name='user', group=group, tag=tag)
+    return user
+
+@pytest.fixture
+def schema():
+    Query = strawberry_django.queries(types.User, types.Group, types.Tag)
+    schema = strawberry.Schema(query=Query)
+    return schema
