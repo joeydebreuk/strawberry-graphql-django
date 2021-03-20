@@ -20,6 +20,14 @@ def user(db, group, tag):
     return user
 
 @pytest.fixture
+def users(db):
+    return [
+        models.User.objects.create(name='user1'),
+        models.User.objects.create(name='user2'),
+        models.User.objects.create(name='user3'),
+    ]
+
+@pytest.fixture
 def schema():
     Query = strawberry_django.queries(types.User, types.Group, types.Tag)
     schema = strawberry.Schema(query=Query)

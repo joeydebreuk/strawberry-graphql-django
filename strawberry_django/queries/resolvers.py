@@ -28,11 +28,13 @@ def get_object_resolver(model, object_type):
 
 def get_list_resolver(model, object_type):
     @fields.field
-    def resolver(filters: Optional[List[str]] = []) -> List[object_type]:
+    def resolver(filters: Optional[List[str]] = [], order_by: Optional[List[str]] = []) -> List[object_type]:
         qs = model.objects.all()
         if filters:
             filter, exclude = utils.process_filters(filters)
             qs = qs.filter(**filter).exclude(**exclude)
+        if order_by:
+            qs = qs.order_by(*order_by)
         return qs
     return resolver
 
@@ -50,7 +52,7 @@ def get_relation_resolver(resolver, related_name):
 
 
 def get_relation_resolver_m2m(resolver, related_name):
-    def func(root, info, filters: Optional[List[str]] = []):
+    def func(root, info, filters: Optional[List[str]] = [], order_by: Optional[List[str]] = []):
         related_name = func.related_name
         if related_name is None:
             related_name = info.field_name
@@ -59,6 +61,8 @@ def get_relation_resolver_m2m(resolver, related_name):
         if filters:
             filter, exclude = utils.process_filters(filters)
             qs = qs.filter(**filter).exclude(**exclude)
+        if order_by:
+            qs = qs.order_by(*order_by)
         if func.resolver:
             qs = func.resolver(root, info, qs)
         return qs
