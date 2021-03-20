@@ -19,16 +19,16 @@ class Tag:
     pass
 
 @types.register
-@strawberry_django.input(models.User, fields=['name'], types=types)
+@strawberry_django.input(models.User, types=types)
 class UserInput:
     pass
 
 @types.register
-@strawberry_django.input(models.Group, fields=['name'], types=types)
+@strawberry_django.input(models.Group, types=types)
 class GroupInput:
     pass
 
 @types.register
-@strawberry_django.input(models.Tag, fields=['name'], types=types)
+@strawberry_django.input(models.Tag, types=types)
 class TagInput:
     pass

@@ -144,8 +144,27 @@ def get_model_fields(cls, model, fields, types, is_input, is_update):
     for field in model._meta.get_fields():
         if not is_in(field.name, field_names, default=True):
             continue
-        if is_input and not field.editable:
-            continue
+
+        if is_input:
+            if not field.editable:
+                continue
+
+            if field.is_relation:
+                if field.many_to_many or field.one_to_many:
+                    field_type = Optional[List[strawberry.ID]]
+                    field_value = strawberry.arguments.UNSET
+                    model_fields.extend([
+                        (f'{field.name}_add', field_type, field_value),
+                        (f'{field.name}_set', field_type, field_value),
+                        (f'{field.name}_remove', field_type, field_value),
+                    ])
+                else:
+                    field_name = field.attname
+                    field_type = strawberry.ID
+                    if is_optional(field, is_input, is_update):
+                        field_type = Optional[field_type]
+                    model_fields.append((field_name, field_type, None))
+                continue
 
         try:
             field_type = get_field_type(field, field_types, type_register, is_input)
@@ -155,14 +174,13 @@ def get_model_fields(cls, model, fields, types, is_input, is_update):
             field_type = LazyModelType(field, type_register, is_input)
 
         if field.is_relation:
-
             if field.many_to_many or field.one_to_many:
                 field_type = List[field_type]
                 field_value = strawberry_django_relation_field()
             else:
                 field_value = strawberry_django_relation_field(m2m=False)
         else:
-            field_value = None
+            field_value = strawberry.arguments.UNSET
 
         if is_optional(field, is_input, is_update):
             field_type = Optional[field_type]

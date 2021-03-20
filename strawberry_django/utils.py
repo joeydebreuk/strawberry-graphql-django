@@ -33,6 +33,18 @@ def get_input_data(model, data):
         values[field_name] = value
     return values
 
+def get_input_data_m2m(model, data):
+    values = {}
+    for field in model._meta.many_to_many:
+        for action in ('add', 'set', 'remove'):
+            field_name = field.attname
+            value = getattr(data, f'{field_name}_{action}', strawberry.arguments.UNSET)
+            if value is strawberry.arguments.UNSET:
+                continue
+            actions = values.setdefault(field_name, {})
+            actions[action] = value
+    return values
+
 def camel_to_snake(s):
     return ''.join(['_'+c.lower() if c.isupper() else c for c in s]).lstrip('_')
 

@@ -148,5 +148,5 @@ def test_input_and_output_types(types):
     ]
 
     assert [(f.name, f.type or f.child.type) for f in Input._type_definition.fields] == [
-        ('foreignKey', ChildInput),
+        ('foreignKeyId', strawberry.ID),
     ]

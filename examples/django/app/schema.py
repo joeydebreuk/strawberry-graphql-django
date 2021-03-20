@@ -38,23 +38,23 @@ class Tag:
 
 # input types
 @types.register
-@strawberry_django.input(models.User, fields=['name'], types=types)
+@strawberry_django.input(models.User, types=types)
 class UserInput:
     pass
 
 @types.register
-@strawberry_django.input(models.Group, fields=['name'], types=types)
+@strawberry_django.input(models.Group, types=types)
 class GroupInput:
     pass
 
 @types.register
-@strawberry_django.input(models.Tag, fields=['name'], types=types)
+@strawberry_django.input(models.Tag, types=types)
 class TagInput:
     pass
 
 # queries can be auto generated from types
 GeneratedQuery = strawberry_django.queries(User, Group, Tag)
-GeneratedMutations = strawberry_django.mutations((UserInput, User), (GroupInput, Group), (TagInput, Tag))
+GeneratedMutations = strawberry_django.mutations((User, UserInput), (Group, GroupInput), (Tag, TagInput))
 
 @strawberry.type
 class Query(GeneratedQuery):

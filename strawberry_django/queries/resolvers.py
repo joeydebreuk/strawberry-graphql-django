@@ -3,7 +3,7 @@ from django.db import models
 from strawberry.types.fields.resolver import StrawberryResolver
 from typing import List, Optional
 import strawberry
-from .. import utils
+from .. import fields, utils
 
 
 class DjangoResolver(StrawberryResolver):
@@ -20,13 +20,14 @@ class DjangoResolver(StrawberryResolver):
 
 
 def get_object_resolver(model, object_type):
+    @fields.field
     def resolver(id: strawberry.ID) -> object_type:
         obj = model.objects.get(id=id)
         return obj
     return resolver
 
-
 def get_list_resolver(model, object_type):
+    @fields.field
     def resolver(filters: Optional[List[str]] = []) -> List[object_type]:
         qs = model.objects.all()
         if filters:

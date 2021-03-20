@@ -3,7 +3,7 @@ import strawberry_django
 from django.db import models
 
 
-class OptionalFieldsModel(models.Model):
+class InputFieldsModel(models.Model):
     mandatory = models.IntegerField()
     default = models.IntegerField(default=1)
     blank = models.IntegerField(blank=True)
@@ -12,7 +12,7 @@ class OptionalFieldsModel(models.Model):
 
 
 def test_input_type():
-    @strawberry_django.input(OptionalFieldsModel)
+    @strawberry_django.input(InputFieldsModel)
     class InputType:
         pass
 
@@ -27,7 +27,7 @@ def test_input_type():
 
 
 def test_input_type_for_partial_update():
-    @strawberry_django.input(OptionalFieldsModel, is_update=True)
+    @strawberry_django.input(InputFieldsModel, is_update=True)
     class InputType:
         pass
 
@@ -38,5 +38,24 @@ def test_input_type_for_partial_update():
         ('blank', int, True),
         ('null', int, True),
         ('nullBoolean', bool, True),
+    ]
+
+class InputParentModel(models.Model):
+    foreign_key = models.ForeignKey(InputFieldsModel, on_delete=models.CASCADE)
+    foreign_key_optional = models.ForeignKey(InputFieldsModel, null=True, on_delete=models.CASCADE)
+    many_to_many = models.ManyToManyField(InputFieldsModel)
+
+def test_foreign_key():
+    @strawberry_django.input(InputParentModel)
+    class InputType:
+        pass
+
+    assert [(f.name, f.type or f.child.type, f.is_optional) for f in InputType._type_definition.fields] == [
+        ('id', strawberry.ID, True),
+        ('foreignKeyId', strawberry.ID, False),
+        ('foreignKeyOptionalId', strawberry.ID, True),
+        ('manyToManyAdd', strawberry.ID, True),
+        ('manyToManySet', strawberry.ID, True),
+        ('manyToManyRemove', strawberry.ID, True),
     ]
 

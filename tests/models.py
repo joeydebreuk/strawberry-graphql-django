@@ -7,7 +7,7 @@ class User(models.Model):
 
 class Group(models.Model):
     name = models.CharField(max_length=50)
-    tags = models.ManyToManyField('Tag', related_name='groups')
+    tags = models.ManyToManyField('Tag', null=True, related_name='groups')
 
 class Tag(models.Model):
     name = models.CharField(max_length=50)
