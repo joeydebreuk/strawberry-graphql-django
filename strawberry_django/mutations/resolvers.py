@@ -1,27 +1,39 @@
 from typing import List, Optional
 import strawberry
-from .. import fields, utils
+from .. import fields, hooks, utils
 from ..type import generate_update_from_input
 
-def create(model, output_type, input_type):
+def create(model, output_type, input_type, pre_save=None, post_save=None):
+    @hooks.add(pre_save=pre_save, post_save=post_save)
     @fields.mutation
-    def mutation(data: input_type) -> output_type:
-        obj_data = utils.get_input_data(model, data)
-        obj = model.objects.create(**obj_data)
-        update_m2m_fields(model, [obj], data)
-        return obj
+    def mutation(info, data: input_type) -> output_type:
+        instance_data = utils.get_input_data(model, data)
+        instance = model(**instance_data)
+        def caller(hook):
+            hook(info, instance)
+        mutation._call_hooks('pre_save', caller)
+        instance.save()
+        update_m2m_fields(model, [instance], data)
+        mutation._call_hooks('post_save', caller)
+        return instance
     return mutation
 
-def create_batch(model, output_type, input_type):
+def create_batch(model, output_type, input_type, pre_save=None, post_save=None):
+    @hooks.add(pre_save=pre_save, post_save=post_save)
     @fields.mutation
     def mutation(data: List[input_type]) -> List[output_type]:
-        objects = []
+        instances = []
         for d in data:
-            obj_data = utils.get_input_data(model, d)
-            obj = model.objects.create(**obj_data)
-            objects.append(obj)
-            update_m2m_fields(model, [obj], d)
-        return objects
+            instance_data = utils.get_input_data(model, d)
+            instance = model(**instance_data)
+            def caller(hook):
+                hook(info=info, instance=instance)
+            mutation._call_hooks('pre_save', caller)
+            instance.save()
+            update_m2m_fields(model, [instance], data)
+            mutation._call_hooks('post_save', caller)
+            instances.append(instance)
+        return instances
     return mutation
 
 def update(model, output_type, input_type):

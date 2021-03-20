@@ -3,7 +3,7 @@ from django.db import models
 from strawberry.types.fields.resolver import StrawberryResolver
 from typing import List, Optional
 import strawberry
-from .. import fields, utils
+from .. import fields, hooks, utils
 
 
 class DjangoResolver(StrawberryResolver):
@@ -26,16 +26,21 @@ def get_object_resolver(model, object_type):
         return obj
     return resolver
 
-def get_list_resolver(model, object_type):
+def get_list_resolver(model, object_type, queryset=None):
+    @hooks.add(queryset=queryset)
     @fields.field
-    def resolver(filters: Optional[List[str]] = [], order_by: Optional[List[str]] = []) -> List[object_type]:
-        qs = model.objects.all()
+    def resolver(info, filters: Optional[List[str]] = [], order_by: Optional[List[str]] = []) -> List[object_type]:
+        class context:
+            qs = model.objects.all()
         if filters:
             filter, exclude = utils.process_filters(filters)
-            qs = qs.filter(**filter).exclude(**exclude)
+            context.qs = context.qs.filter(**filter).exclude(**exclude)
         if order_by:
-            qs = qs.order_by(*order_by)
-        return qs
+            context.qs = context.qs.order_by(*order_by)
+        def queryset(hook):
+            context.qs = hook(info=info, qs=context.qs)
+        resolver._call_hooks('queryset', queryset)
+        return context.qs
     return resolver
 
 
