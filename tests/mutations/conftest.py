@@ -6,11 +6,7 @@ from .. import types
 @pytest.fixture
 def schema():
     Query = strawberry_django.queries(types.User)
-    Mutation = strawberry_django.mutations(
-        (types.User, types.UserInput),
-        (types.Group, types.GroupInput),
-        (types.Tag, types.TagInput)
-    )
+    Mutation = strawberry_django.mutations(types.User, types.Group, types.Tag, types=types.types)
     schema = strawberry.Schema(Query, mutation=Mutation)
     return schema
 

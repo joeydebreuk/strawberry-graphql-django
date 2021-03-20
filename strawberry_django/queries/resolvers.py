@@ -4,6 +4,7 @@ from strawberry.types.fields.resolver import StrawberryResolver
 from typing import List, Optional
 import strawberry
 from .. import fields, hooks, utils
+from .arguments import resolve_type_args
 
 
 class DjangoResolver(StrawberryResolver):
@@ -19,14 +20,17 @@ class DjangoResolver(StrawberryResolver):
         return func(*args, **kwargs)
 
 
-def get_object_resolver(model, object_type):
+def get_object_resolver(*args, types=None):
+    model, object_type = resolve_type_args(args, types=types, single=True)
     @fields.field
     def resolver(id: strawberry.ID) -> object_type:
         obj = model.objects.get(id=id)
         return obj
     return resolver
 
-def get_list_resolver(model, object_type, queryset=None):
+
+def get_list_resolver(*args, types=None, queryset=None):
+    model, object_type = resolve_type_args(args, types=types, single=True)
     @hooks.add(queryset=queryset)
     @fields.field
     def resolver(info, filters: Optional[List[str]] = [], order_by: Optional[List[str]] = []) -> List[object_type]:

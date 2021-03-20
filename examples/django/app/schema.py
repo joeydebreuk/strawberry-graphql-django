@@ -53,8 +53,8 @@ class TagInput:
     pass
 
 # queries can be auto generated from types
-GeneratedQuery = strawberry_django.queries(User, Group, Tag)
-GeneratedMutations = strawberry_django.mutations((User, UserInput), (Group, GroupInput), (Tag, TagInput))
+GeneratedQuery = strawberry_django.queries(User, Group, Tag, types=types)
+GeneratedMutations = strawberry_django.mutations(User, Group, Tag, types=types)
 
 @strawberry.type
 class Query(GeneratedQuery):

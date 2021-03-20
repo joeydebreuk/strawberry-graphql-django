@@ -2,8 +2,10 @@ from typing import List, Optional
 import strawberry
 from .. import fields, hooks, utils
 from ..type import generate_update_from_input
+from ..queries.arguments import resolve_type_args
 
-def create(model, output_type, input_type, pre_save=None, post_save=None):
+def create(*args, types=None, pre_save=None, post_save=None):
+    model, output_type, input_type = resolve_type_args(args, types=types, is_input=True, single=True)
     @hooks.add(pre_save=pre_save, post_save=post_save)
     @fields.mutation
     def mutation(info, data: input_type) -> output_type:
@@ -18,7 +20,8 @@ def create(model, output_type, input_type, pre_save=None, post_save=None):
         return instance
     return mutation
 
-def create_batch(model, output_type, input_type, pre_save=None, post_save=None):
+def create_batch(*args, types=None, pre_save=None, post_save=None):
+    model, output_type, input_type = resolve_type_args(args, types=types, is_input=True, single=True)
     @hooks.add(pre_save=pre_save, post_save=post_save)
     @fields.mutation
     def mutation(data: List[input_type]) -> List[output_type]:
@@ -36,7 +39,8 @@ def create_batch(model, output_type, input_type, pre_save=None, post_save=None):
         return instances
     return mutation
 
-def update(model, output_type, input_type):
+def update(*args, types=None):
+    model, output_type, input_type = resolve_type_args(args, types=types, is_input=True, single=True)
     update_type = generate_update_from_input(model, input_type)
     @fields.mutation
     def mutation(data: update_type, filters: Optional[List[str]] = []) -> List[output_type]:
@@ -50,7 +54,8 @@ def update(model, output_type, input_type):
         return qs.all()
     return mutation
 
-def delete(model, output_type, input_type):
+def delete(*args, types=None):
+    model, output_type, input_type = resolve_type_args(args, types=types, is_input=True, single=True)
     @fields.mutation
     def mutation(filters: Optional[List[str]] = []) -> List[strawberry.ID]:
         qs = model.objects.all()
@@ -61,6 +66,9 @@ def delete(model, output_type, input_type):
         qs.delete()
         return ids
     return mutation
+
+
+#internal helpers
 
 def update_m2m_fields(model, objects, data):
     data = utils.get_input_data_m2m(model, data)
