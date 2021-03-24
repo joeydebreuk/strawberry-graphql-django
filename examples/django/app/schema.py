@@ -1,3 +1,4 @@
+from typing import Optional
 import strawberry
 import strawberry_django
 from . import models
@@ -11,10 +12,10 @@ class MyUser:
         return root.name.upper()
 
     # forward referensing works fine
-    group: 'Group' = strawberry_django.relation_field()
+    group: Optional['Group'] = strawberry_django.field()
 
     # relation field name is configurable
-    user_group: 'Group' = strawberry_django.relation_field(related_name='group')
+    user_group: Optional['Group'] = strawberry_django.field(source='group')
 
 
 # type register is used as a type store which is then
@@ -59,6 +60,7 @@ GeneratedMutations = strawberry_django.mutations(User, Group, Tag, types=types)
 @strawberry.type
 class Query(GeneratedQuery):
     @strawberry.field
+    @strawberry_django.django_resolver
     def my_user(name: str) -> MyUser:
         return models.User.objects.get(name=name)
 
