@@ -48,6 +48,9 @@ def get_input_data_m2m(model, data):
 def camel_to_snake(s):
     return ''.join(['_'+c.lower() if c.isupper() else c for c in s]).lstrip('_')
 
+def snake_to_camel(s):
+    return s.title().replace('_', '')
+
 def is_async():
     # django uses the same method to detect async operation
     # https://github.com/django/django/blob/76c0b32f826469320c59709d31e2f2126dd7c505/django/utils/asyncio.py

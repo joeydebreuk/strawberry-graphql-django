@@ -1,11 +1,12 @@
 from django.db.models import fields
-from typing import List, Optional
-import datetime, decimal, uuid
+from strawberry.arguments import UNSET
+from typing import get_origin, List, Optional
 import dataclasses
+import datetime, decimal, uuid
 import strawberry
 from . import utils
+from .fields import DjangoField, field as strawberry_django_field
 
-class UNSET: pass
 
 field_type_map = {
     fields.AutoField: strawberry.ID,
@@ -41,7 +42,7 @@ field_type_map = {
 class LazyModelType(strawberry.LazyType):
     def __init__(self, field, type_register, is_input):
         self.field, self.type_register, self.is_input = field, type_register, is_input
-        super().__init__(None, None, None)
+        super().__init__(field.name, None, None)
 
     def resolve_type(self):
         model = self.field.related_model
@@ -55,11 +56,7 @@ class LazyModelType(strawberry.LazyType):
                 f" which has related model '{model._meta.object_name}'")
 
 
-def get_field_type(field, field_types, type_register, is_input):
-    field_type = field_types.get(field.name, UNSET)
-    if field_type is not UNSET:
-        return field_type
-
+def get_field_type(field, type_register, is_input):
     db_field_type = type(field)
 
     if type_register:
@@ -107,37 +104,25 @@ def is_in(item, item_list, default=False):
 
 def process_fields(fields, model):
     field_names = []
-    field_types = {}
 
     if fields is None:
-        return field_names, field_types
+        return field_names
 
     model_field_names = [field.name for field in model._meta.get_fields()]
 
     for field in fields:
         if isinstance(field, str):
             field_name = field
-        #TODO: do we want to support tuple notation?
-        elif isinstance(field, tuple):
-            if len(field) != 2:
-                raise TypeError('Length of tuple should exactly 2')
-            field_name, field_type = field
-            field_types[field_name] = field_type
         else:
-            raise TypeError('Type of field parameter should be str or tuple')
+            raise TypeError('Type of field parameter should be str')
         if field_name not in model_field_names:
             raise AttributeError(f"Django model '{model._meta.object_name}' has no field '{field_name}'")
         field_names.append(field_name)
-    return field_names, field_types
-
-from .fields import (
-    field as strawberry_django_field,
-    relation_field as strawberry_django_relation_field,
-)
+    return field_names
 
 
 def get_model_fields(cls, model, fields, types, is_input, is_update):
-    field_names, field_types = process_fields(fields,  model)
+    field_names = process_fields(fields,  model)
     type_register = types
 
     model_fields = []
@@ -167,7 +152,7 @@ def get_model_fields(cls, model, fields, types, is_input, is_update):
                 continue
 
         try:
-            field_type = get_field_type(field, field_types, type_register, is_input)
+            field_type = get_field_type(field, type_register, is_input)
         except TypeError:
             if not field.is_relation or type_register is None:
                 raise
@@ -176,9 +161,7 @@ def get_model_fields(cls, model, fields, types, is_input, is_update):
         if field.is_relation:
             if field.many_to_many or field.one_to_many:
                 field_type = List[field_type]
-                field_value = strawberry_django_relation_field()
-            else:
-                field_value = strawberry_django_relation_field(m2m=False)
+            field_value = strawberry_django_field(source=field.name)
         else:
             field_value = strawberry.arguments.UNSET
 
@@ -189,3 +172,18 @@ def get_model_fields(cls, model, fields, types, is_input, is_update):
     return model_fields
 
 
+# post processing fields before passing them to strawberry
+def update_fields(cls, model):
+    for field_name, field in cls.__dict__.items():
+        if not isinstance(field, DjangoField):
+            continue
+
+        source = field.source
+        if source is None:
+            source = field_name
+
+        django_field = model._meta.get_field(source)
+        is_m2m = django_field.many_to_many or django_field.one_to_many
+
+        field = field.resolve(django_field.is_relation, is_m2m)
+        setattr(cls, field_name, field)

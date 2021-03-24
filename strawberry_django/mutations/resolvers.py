@@ -3,11 +3,13 @@ import strawberry
 from .. import fields, hooks, utils
 from ..type import generate_update_from_input
 from ..queries.arguments import resolve_type_args
+from ..resolvers import django_resolver
 
 def create(*args, types=None, pre_save=None, post_save=None):
     model, output_type, input_type = resolve_type_args(args, types=types, is_input=True, single=True)
     @hooks.add(pre_save=pre_save, post_save=post_save)
-    @fields.mutation
+    @strawberry.mutation
+    @django_resolver
     def mutation(info, data: input_type) -> output_type:
         instance_data = utils.get_input_data(model, data)
         instance = model(**instance_data)
@@ -23,7 +25,8 @@ def create(*args, types=None, pre_save=None, post_save=None):
 def create_batch(*args, types=None, pre_save=None, post_save=None):
     model, output_type, input_type = resolve_type_args(args, types=types, is_input=True, single=True)
     @hooks.add(pre_save=pre_save, post_save=post_save)
-    @fields.mutation
+    @strawberry.mutation
+    @django_resolver
     def mutation(data: List[input_type]) -> List[output_type]:
         instances = []
         for d in data:
@@ -42,7 +45,8 @@ def create_batch(*args, types=None, pre_save=None, post_save=None):
 def update(*args, types=None):
     model, output_type, input_type = resolve_type_args(args, types=types, is_input=True, single=True)
     update_type = generate_update_from_input(model, input_type)
-    @fields.mutation
+    @strawberry.mutation
+    @django_resolver
     def mutation(data: update_type, filters: Optional[List[str]] = []) -> List[output_type]:
         qs = model.objects.all()
         if filters:
@@ -56,7 +60,8 @@ def update(*args, types=None):
 
 def delete(*args, types=None):
     model, output_type, input_type = resolve_type_args(args, types=types, is_input=True, single=True)
-    @fields.mutation
+    @strawberry.mutation
+    @django_resolver
     def mutation(filters: Optional[List[str]] = []) -> List[strawberry.ID]:
         qs = model.objects.all()
         if filters:

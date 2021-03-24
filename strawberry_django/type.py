@@ -1,6 +1,6 @@
 import strawberry
 import typing
-from .types import get_model_fields
+from .types import get_model_fields, update_fields
 
 _type = type
 
@@ -13,6 +13,7 @@ def type(model, *, fields=None, types=None, is_update=False, **kwargs):
         for field_name, field_type, field_value in model_fields:
             cls.__annotations__[field_name] = field_type
             setattr(cls, field_name, field_value)
+        update_fields(cls, model)
         cls._django_model = model
         cls._is_update = is_update
         return strawberry.type(cls, **kwargs)
