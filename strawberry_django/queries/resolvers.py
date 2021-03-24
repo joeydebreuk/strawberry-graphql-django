@@ -1,5 +1,6 @@
 from django.db import models
 from typing import List, Optional
+import inspect
 import strawberry
 from .. import hooks, utils
 from ..resolvers import django_resolver
@@ -36,24 +37,32 @@ def get_list_resolver(*args, types=None, queryset=None):
     return resolver
 
 
-def get_resolver(resolver=None, source=None, is_relation=False, is_m2m=False):
+def get_resolver(resolver=None, field_name=None, is_relation=False, is_m2m=False):
     if resolver:
+        if inspect.iscoroutinefunction(resolver):
+            return resolver
         return django_resolver(resolver)
+
     if not is_relation:
+        if field_name:
+            def resolver(root):
+                return getattr(root, field_name)
+            return resolver
         return None
 
     if is_m2m:
         def resolver(root, info, filters: Optional[List[str]] = [], order_by: Optional[List[str]] = []):
-            return get_instance_field(root, source, info, filters, order_by)
+            return get_instance_field(root, field_name, info, filters, order_by)
         return resolver
+
     else:
         def resolver(root, info):
-            return get_instance_field(root, source, info)
+            return get_instance_field(root, field_name, info)
         return resolver
 
 @django_resolver
-def get_instance_field(instance, source, info=None, filters=None, order_by=None):
-    attr = getattr(instance, source or info.field_name)
+def get_instance_field(instance, field_name, info=None, filters=None, order_by=None):
+    attr = getattr(instance, field_name or info.field_name)
     if not isinstance(attr, (models.QuerySet, models.Manager)):
         return attr
 

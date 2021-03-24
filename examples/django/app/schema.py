@@ -15,7 +15,7 @@ class MyUser:
     group: Optional['Group'] = strawberry_django.field()
 
     # relation field name is configurable
-    user_group: Optional['Group'] = strawberry_django.field(source='group')
+    user_group: Optional['Group'] = strawberry_django.field(field_name='group')
 
 
 # type register is used as a type store which is then

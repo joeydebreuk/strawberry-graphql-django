@@ -83,6 +83,10 @@ def get_field_type(field, type_register, is_input):
     if field_type is not UNSET:
         return field_type
 
+    if field.is_relation:
+        model = field.related_model
+        raise TypeError(f"No type defined for Django model '{model._meta.object_name}'")
+
     # TODO: show field name
     raise TypeError(f"No type defined for '{db_field_type.__name__}'")
 
@@ -122,6 +126,9 @@ def process_fields(fields, model):
 
 
 def get_model_fields(cls, model, fields, types, is_input, is_update):
+    if fields == []:
+        return []
+
     field_names = process_fields(fields,  model)
     type_register = types
 
@@ -161,7 +168,7 @@ def get_model_fields(cls, model, fields, types, is_input, is_update):
         if field.is_relation:
             if field.many_to_many or field.one_to_many:
                 field_type = List[field_type]
-            field_value = strawberry_django_field(source=field.name)
+            field_value = strawberry_django_field(field_name=field.name)
         else:
             field_value = strawberry.arguments.UNSET
 
@@ -178,11 +185,8 @@ def update_fields(cls, model):
         if not isinstance(field, DjangoField):
             continue
 
-        source = field.source
-        if source is None:
-            source = field_name
-
-        django_field = model._meta.get_field(source)
+        django_field_name = field.field_name or field_name
+        django_field = model._meta.get_field(django_field_name)
         is_m2m = django_field.many_to_many or django_field.one_to_many
 
         field = field.resolve(django_field.is_relation, is_m2m)

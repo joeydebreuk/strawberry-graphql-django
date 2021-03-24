@@ -6,7 +6,7 @@ from . import utils
 
 # decorator which is used with async views to secure django orm calls to
 # be done in sync context. django orm does not support async yet
-def django_resolver(resolver=None, source=None, is_relation=False, is_m2m=False):
+def django_resolver(resolver=None):
     @functools.wraps(resolver)
     def wrapper(*args, **kwargs):
         if utils.is_async():

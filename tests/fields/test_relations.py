@@ -54,3 +54,10 @@ def test_resolvers(parent, child):
     parents = child._type_definition.fields[2]
     assert parents.name == 'parents'
     assert parents.base_resolver
+
+
+def test_unknown_type():
+    with pytest.raises(TypeError, match="No type defined for Django model 'ChildModel'"):
+        @strawberry_django.type(ParentModel, fields=['children'])
+        class Parent:
+            pass
